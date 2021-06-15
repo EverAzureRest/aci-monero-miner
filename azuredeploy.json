@@ -1,0 +1,92 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "ContainerGroupName": {
+            "type":"string",
+            "defaultValue": "monerominer"
+        },
+        "numberOfInstances": {
+            "type": "int",
+            "defaultValue": 1,
+            "metadata": {
+                "description": "Number of Agent Containers to create"
+            }
+        },
+        "Image":{
+            "type":"string"
+        },
+        "ImageVersion":{
+            "type":"string",
+            "defaultValue":"latest"
+        },
+        "PoolURL":{
+            "type":"string"
+        },
+        "PoolUser":{
+            "type":"string"
+        },
+        "CPU":{
+            "type":"string"
+        },
+        "Memory":{
+            "type":"string"
+        },
+        "containerRegistry": {
+            "type": "string"
+        },
+        "registryPassword": {
+            "type": "string"
+        }
+    
+    },
+    "variables": {
+        "registryFQDN": "[concat(parameters('containerRegistry'), '.azurecr.io')]"
+
+    },
+    "resources": [
+
+        {
+        "name": "[concat(parameters('ContainerGroupName'), copyIndex())]",
+        "type": "Microsoft.ContainerInstance/containerGroups",
+        "apiVersion": "2019-12-01",
+        "location": "[resourceGroup().location]",
+        "copy": {
+            "count": "[parameters('numberOfInstances')]",
+            "name": "containerLoop"
+        },
+        "properties": {
+            "containers": [
+                {
+                    "name": "[concat(parameters('ContainerGroupName'), copyIndex())]",
+                    "properties": {
+                        "image": "[concat (parameters('Image'), ':', parameters('ImageVersion'))]",
+                        "command": [
+                            "./xmrig",
+                            "-o",
+                            "[parameters('PoolURL')]",
+                            "-u",
+                            "[parameters('PoolUser')]"
+                        ],
+                        "resources": {
+                            "requests": {
+                                "cpu": "[parameters('CPU')]",
+                                "memoryInGB": "[parameters('Memory')]"
+                            }
+                        }
+                    }
+                }
+            ],
+            "imageRegistryCredentials": [
+                {
+                    "server":"[variables('registryFQDN')]",
+                    "username": "[parameters('containerRegistry')]",
+                    "password": "[parameters('registryPassword')]"
+                }
+            ],
+            "osType": "Linux"
+        }
+    }
+    ],
+    "outputs": {}
+}
